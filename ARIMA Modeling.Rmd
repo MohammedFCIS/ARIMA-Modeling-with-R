@@ -1,0 +1,111 @@
+---
+title: "ARIMA Modeling"
+author: "Mohammed Ali"
+date: "March 2, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(astsa)
+library(xts)
+```
+
+# Time Series Data and Models
+
+Investigate the nature of time series data and learn the basics of ARMA models that can explain the behavior of such data. we will learn the basic R commands needed to help set up raw time series data to a form that can be analyzed using ARMA models.
+
+## Data Play
+Before we use a data set for the first time, we should use the help system to see the details of the data. For example, use `help(AirPassengers)` or `?AirPassengers` to see the details of the series.
+
+```{r data_play}
+# View a detailed description of AirPassengers
+#help(AirPassengers)
+
+# Plot AirPassengers
+plot(AirPassengers)
+
+# Plot the DJIA daily closings
+plot(djia$Close)
+
+# Plot the Southern Oscillation Index
+plot(soi)
+
+
+```
+
+
+## Differencing
+When a time series is _trend stationary_, it will have stationary behavior around a trend. A simple example is $Y_t=α+β_t+X_t$ where $X_t$ is stationary.
+
+A different type of model for trend is _random walk_, which has the form $X_t=X_{t−1}+W_t$, where $W_t$ is white noise. It is called a random walk because at time t the process is where it was at time $t−1$ plus a completely random movement. For a random walk with drift, a constant is added to the model and will cause the random walk to drift in the direction (positve or negative) of the drift.
+
+
+In both cases, simple differencing can remove the trend and coerce the data to stationarity. Differencing looks at the difference between the value of a time series at a certain point in time and its preceding value. That is, $X_t−X_{t−1}$ is computed.
+
+To check that it works, we will difference each generated time series and plot the detrended series. If a time series is in x, then `diff(x)` will have the detrended series obtained by differencing the data. To plot the detrended series, simply use `plot(diff(x))`.
+
+```{r diff}
+# Plot globtemp and detrended globtemp
+par(mfrow = c(2,1))
+plot(globtemp) 
+plot(diff(globtemp)) 
+
+# Plot cmort and detrended cmort
+par(mfrow = c(2,1))
+plot(cmort)
+plot(diff(cmort))
+
+```
+
+## Dealing with Trend and Heteroscedasticity
+Here, we will coerce nonstationary data to stationarity by calculating the return or growth rate as follows.
+
+Often time series are generated as
+$X_t=(1+p_t)X_{t−1}$
+meaning that the value of the time series observed at time t equals the value observed at time $t−1$ and a small percent change pt at time $t$.
+
+A simple deterministic example is putting money into a bank with a fixed interest $p$. In this case, $X_t$ is the value of the account at time period t with an initial deposit of $X_0$.
+
+Typically, pt is referred to as the return or growth rate of a time series, and this process is often stable.
+
+For reasons that are outside the scope of this course, it can be shown that the growth rate pt can be approximated by
+$Y_t=logX_t−logX_t−1≈p_t$.
+
+```{r diff_log}
+# astsa and xts are preloaded 
+
+# Plot GNP series (gnp) and its growth rate
+par(mfrow = c(2,1))
+plot(gnp)
+plot(diff(log(gnp)))
+
+# Plot DJIA closings (djia$Close) and its returns
+par(mfrow = c(2,1))
+plot(djia$Close)
+plot(diff(log(djia$Close)))
+```
+
+# Simulating ARMA Models
+Any stationary time series can be written as a linear combination of white noise. In addition, any ARMA model has this form, so it is a good choice for modeling stationary time series.
+
+R provides a simple function called `arima.sim()` to generate data from an ARMA model. For example, the syntax for generating 100 observations from an `MA(1)` with parameter `.9` is `arima.sim(model = list(order = c(0, 0, 1), ma = .9 ), n = 100`). We can also use `order = c(0, 0, 0)` to generate white noise.
+
+Now, we will generate data from various ARMA models. For each command, generate 200 observations and plot the result.
+```{r arma_model}
+# Generate and plot white noise
+WN <- arima.sim(model = list(order = c(0, 0, 0)), n = 200)
+plot(WN)
+
+
+# Generate and plot an MA(1) with parameter .9 
+MA <- arima.sim(model = list(order = c(0, 0, 1), ma = 0.9), n = 200)
+plot(MA)
+
+
+# Generate and plot an AR(2) with parameters 1.5 and -.75
+AR <- arima.sim(model = list(order = c(2, 0, 0), ar = c(1.5, -0.75)), n = 200)
+plot(AR)
+```
+
+
