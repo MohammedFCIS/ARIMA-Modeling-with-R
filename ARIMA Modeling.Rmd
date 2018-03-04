@@ -86,7 +86,7 @@ plot(djia$Close)
 plot(diff(log(djia$Close)))
 ```
 
-# Simulating ARMA Models
+## Simulating ARMA Models
 Any stationary time series can be written as a linear combination of white noise. In addition, any ARMA model has this form, so it is a good choice for modeling stationary time series.
 
 R provides a simple function called `arima.sim()` to generate data from an ARMA model. For example, the syntax for generating 100 observations from an `MA(1)` with parameter `.9` is `arima.sim(model = list(order = c(0, 0, 1), ma = .9 ), n = 100`). We can also use `order = c(0, 0, 0)` to generate white noise.
@@ -107,5 +107,159 @@ plot(MA)
 AR <- arima.sim(model = list(order = c(2, 0, 0), ar = c(1.5, -0.75)), n = 200)
 plot(AR)
 ```
+
+# Fitting ARMA models
+Discover the wonderful world of ARMA models and how to fit these models to time series data. We will learn how to identify a model, how to choose the correct model, and how to verify a model once we fit it to data. We will learn how to use R time series commands from the stats and astsa packages.
+
+## Fitting an AR(1) Model
+
+```{r ar_1}
+# Generate 100 observations from the AR(1) model
+x <- arima.sim(model = list(order = c(1, 0, 0), ar = .9), n = 100) 
+
+# Plot the generated data 
+plot(x)
+
+# Plot the sample P/ACF pair
+acf2(x)
+
+# Fit an AR(1) to the data and examine the t-table
+sarima(x, p = 1, d = 0, q = 0)
+```
+
+## Fitting an AR(2) Model
+```{r ar_2}
+# Plot x
+x <- arima.sim(model = list(order = c(2, 0, 0), ar = c(1.5, -.75)), n = 200)
+plot(x)
+
+# Plot the sample P/ACF of x
+acf2(x)
+
+# Fit an AR(2) to the data and examine the t-table
+sarima(x, p = 2, d = 0, q = 0)
+```
+
+## Fitting an MA(1) Model
+```{r ma_1}
+# Plot x
+x <- arima.sim(model = list(order = c(0, 0, 1), ma = -.8), n = 100)
+plot(x)
+# Plot the sample P/ACF of x
+acf2(x)
+
+# Fit an MA(1) to the data and examine the t-table
+sarima(x, p = 0, d = 0, q = 1)
+```
+
+## Fitting an ARMA model
+```{r arma_2_1}
+x <- arima.sim(model = list(order = c(2, 0, 1), ar = c(1, -.9), ma = .8), n = 250)
+
+# Plot x
+plot(x)
+
+# Plot the sample P/ACF of x
+acf2(x)
+
+# Fit an ARMA(2,1) to the data and examine the t-table
+sarima(x, p = 2, d = 0, q = 1)
+```
+
+## Model Choice - I
+```{r model_1}
+dl_varve <- diff(log(varve))
+
+# Fit an MA(1) to dl_varve.   
+sarima(dl_varve, p = 0, d = 0, q = 1)
+
+# Fit an MA(2) to dl_varve. Improvement?
+sarima(dl_varve, p = 0, d = 0, q =2)
+
+# Fit an ARMA(1,1) to dl_varve. Improvement?
+sarima(dl_varve, p = 1, d = 0, q = 1)
+```
+
+## ARMA get in
+The data in oil are crude `oil`, WTI spot price FOB (in dollars per barrel), weekly data from 2000 to 2008. Let us use our skills to fit an ARMA model to the returns. The weekly crude oil prices (oil) are plotted for us. Throughout the exercise, work with the returns, which we will calculate.
+
+As before, the astsa package is preloaded for we. The data are preloaded as oil and plotted on the right.
+
+```{r wrap}
+# Calculate approximate oil returns
+oil_returns <- diff(log(oil))
+
+# Plot oil_returns. Notice the outliers.
+plot(oil_returns)
+
+# Plot the P/ACF pair for oil_returns
+acf2(oil_returns)
+
+# Assuming both P/ACF are tailing, fit a model to oil_returns
+sarima(oil_returns, p = 1, d = 0, q = 1)
+```
+
+
+# ARIMA Models
+Now that we know how to fit ARMA models to stationary time series, we will learn about integrated ARMA (ARIMA) models for nonstationary time series. we will fit the models to real data using R time series commands from the stats and astsa packages.
+
+## ARIMA - Plug and Play
+```{r arima_1}
+x <- arima.sim(model = list(order = c(1, 1, 0), ar = .9), n = 200)
+# Plot x
+plot(x)
+
+# Plot the P/ACF pair of x
+acf2(x)
+
+# Plot the differenced data
+plot(diff(x))
+
+# Plot the P/ACF pair of the differenced data
+acf2(diff(x))
+```
+
+## Global Warming
+```{r global_Warming}
+# Plot the sample P/ACF pair of the differenced data 
+acf2(diff(globtemp))
+
+# Fit an ARIMA(1,1,1) model to globtemp
+sarima(globtemp, p = 1, d = 1, q = 1)
+
+# Fit an ARIMA(0,1,2) model to globtemp. Which model is better?
+
+sarima(globtemp, p = 0, d = 1, q = 2)
+```
+
+## Forecasting Simulated ARIMA
+```{r forcast}
+x <- arima.sim(model = list(order = c(1, 1, 0), ar = .9), n = 200) 
+# Plot P/ACF pair of differenced data 
+acf2(diff(x))
+
+# Fit model - check t-table and diagnostics
+sarima(x, p = 1, d = 1, q = 0)
+
+# Forecast the data 20 time periods ahead
+sarima.for(x, n.ahead = 20, p = 1, d = 1, q = 0) 
+#lines(y)  
+```
+
+## Forecasting Global Temperatures
+Now you can try forecasting real data.
+
+Here, you will forecast the annual global temperature deviations globtemp to 2050. Recall that in previous exercises, you fit an `ARIMA(0,1,2)` model to the data. You will refit the model to confirm it, and then forecast the series 35 years into the future.
+
+```{r forcast_globalTemp}
+# Fit an ARIMA(0,1,2) to globtemp and check the fit
+sarima(globtemp, p = 0, d = 1, q = 2)
+
+# Forecast data 35 years into the future
+sarima.for(globtemp, n.ahead = 35, p = 0, d = 1, q = 2) 
+```
+
+
+
 
 
